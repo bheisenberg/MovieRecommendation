@@ -10,6 +10,8 @@ namespace MovieRecommender
     {
         static void Main(string[] args)
         {
+            Parser parser = new Parser();
+            MovieRecommender movieRecommender = new MovieRecommender(parser.GetRegressionData());
         }
     }
 }
