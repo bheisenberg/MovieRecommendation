@@ -19,10 +19,10 @@ namespace MovieRecommender
             userData = new Dictionary<int, List<MovieRating>>();
             movieIds = new List<int>();
             userIds = new List<int>();
-            GetRegressionData();
+            GetNeuralData();
         }
 
-        public RegressionData GetRegressionData ()
+        public List<NeuralData> GetNeuralData ()
         {
             List<MovieRating> ratings = File.ReadLines(ratingsFile)
                 .Select(csvLine => csvLine.Split(',')).Skip(1)
@@ -40,27 +40,30 @@ namespace MovieRecommender
             }
         }
 
-        private RegressionData CreateVectors(List<MovieRating> ratings)
+        private List<NeuralData> CreateVectors(List<MovieRating> ratings)
         {
             double[][] input = new double[ratings.Count][];
             double[][] output = new double[ratings.Count][];
-            double[][] svmInput = new double[ratings.Count][];
-            double[] svmOutput = new double[ratings.Count];
-            for (int i = 0; i < ratings.Count; i++)
+            //double[][] svmInput = new double[ratings.Count][];
+            //double[] svmOutput = new double[ratings.Count];
+            for (int i = 0; i < 1000; i++)
             {
-                //double[] userVector = CreateVector(userIds, ratings[i].userId);
-                //double[] movieVector = CreateVector(movieIds, ratings[i].movieId);
-                //double[] outputVector = new double[] { ratings[i].rating };
-                //input[i] = userVector.Concat(movieVector).ToArray();
-                //output[i] = outputVector;
-                svmInput[i] = new double[] { ratings[i].userId, ratings[i].movieId };
-                svmOutput[i] = ratings[i].rating;
+                double[] userVector = CreateVector(userIds, ratings[i].userId);
+                double[] movieVector = CreateVector(movieIds, ratings[i].movieId);
+                double[] outputVector = new double[] { ratings[i].rating };
+                input[i] = userVector.Concat(movieVector).ToArray();
+                output[i] = outputVector;
+                //svmInput[i] = new double[] { ratings[i].userId, ratings[i].movieId };
+                //svmOutput[i] = ratings[i].rating;
                 //PrintVector(input[i], "INPUT");
                 //PrintVector(output[i], "OUTPUT");
                 //PrintVector(svmInput[i], "SVM INPUT");
                 //Debug.WriteLine(svmOutput[i]);
             }
-            return new RegressionData(input, output, svmInput, svmOutput);
+            NeuralData neuralData = new NeuralData(input, output);
+            Debug.WriteLine("FINISHED CREATING VECTORS");
+            //NeuralData regressionData = new NeuralData(svmInput, output);
+            return new List<NeuralData>() { neuralData };
         }
 
 

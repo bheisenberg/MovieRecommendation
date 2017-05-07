@@ -17,11 +17,20 @@ namespace MovieRecommender
     class MovieRecommender
     {
         private int folds = 10;
-        private RegressionData regressionData;
-        public MovieRecommender(RegressionData regressionData)
+        private List<NeuralData> data;
+        public MovieRecommender(List<NeuralData> data)
         {
-            this.regressionData = regressionData.Shuffle();
+            ShuffleData(data);
             Initialize();
+        }
+
+        private void ShuffleData(List<NeuralData> data)
+        {
+            this.data = new List<NeuralData>();
+            foreach(NeuralData item in data)
+            {
+                this.data.Add(item.Shuffle());
+            }
         }
 
         private void PrintVector(double[] input, string name)
@@ -37,24 +46,28 @@ namespace MovieRecommender
 
         private void Initialize()
         {
-            int n = regressionData.svmInput.GetLength(0);
+            int n = data[1].input.GetLength(0);
             int size = n / folds;
             for (int i = 0; i < folds; i++)
             {
                 Debug.WriteLine("STARTING FOLD " + i);
                 int start = i * size;
                 int end = (i + 1) * size - 1;
-                FoldData currentFold = new FoldData(regressionData.svmInput, regressionData.svmOutput, start, end);
+                FoldData currentFold = new FoldData(data[1].input, data[1].output, start, end);
                 // Use Ordinary Least Squares to learn the regression
                 OrdinaryLeastSquares ols = new OrdinaryLeastSquares();
                 // Use OLS to learn the simple linear regression
-                var regression = ols.Learn(currentFold.trainX, currentFold.svmTrainY);
+                var regression = ols.Learn(currentFold.trainX, currentFold.trainY);
 
                 // Compute the output for a given input:
-                for (int j = 0; j < currentFold.testX.GetLength(0); j++)
+                double [][] testOutput = regression.Transform(currentFold.testX); // The answer will be 28.088
+
+                for(int j=0; j < testOutput.GetLength(0); j++)
                 {
-                    double y = regression.Transform(currentFold.testX[j]); // The answer will be 28.088
-                    Debug.WriteLine(y);
+                    for(int k=0; k < testOutput[j].Length; i++)
+                    {
+                        Debug.WriteLine(testOutput[k]);
+                    }
                 }
             }
         }
