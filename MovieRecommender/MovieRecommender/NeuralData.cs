@@ -8,6 +8,7 @@ public class NeuralData
 {
     public double[][] input { get; set; }
     public double[][] output { get; set; }
+    public int[] intOutput { get; set; }
     public string[] topics { get; set; }
 
     public NeuralData(double[][] input, double[][] output, string[] topics)
@@ -21,7 +22,12 @@ public class NeuralData
     {
         this.input = input;
         this.output = output;
-        this.topics = topics;
+    }
+
+    public NeuralData(double[][] input, int[] output)
+    {
+        this.input = input;
+        this.intOutput = output;
     }
 
     public int[] RandomIndices(double[][] inputArray)

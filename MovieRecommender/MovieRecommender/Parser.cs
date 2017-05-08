@@ -42,25 +42,28 @@ namespace MovieRecommender
 
         private List<NeuralData> CreateVectors(List<MovieRating> ratings)
         {
-            double[][] input = new double[ratings.Count][];
+            //double[][] input = new double[ratings.Count][];
             double[][] output = new double[ratings.Count][];
-            //double[][] svmInput = new double[ratings.Count][];
-            //double[] svmOutput = new double[ratings.Count];
-            for (int i = 0; i < 1000; i++)
+            double[][] svmInput = new double[ratings.Count][];
+            int[] svmOutput = new int[ratings.Count];
+            for (int i = 0; i < ratings.Count; i++)
             {
-                double[] userVector = CreateVector(userIds, ratings[i].userId);
-                double[] movieVector = CreateVector(movieIds, ratings[i].movieId);
+                //double[] userVector = CreateVector(userIds, ratings[i].userId);
+                //double[] movieVector = CreateVector(movieIds, ratings[i].movieId);
                 double[] outputVector = new double[] { ratings[i].rating };
-                input[i] = userVector.Concat(movieVector).ToArray();
+                //input[i] = userVector.Concat(movieVector).ToArray();
+                //output[i] = outputVector;
+                svmInput[i] = new double[] { ratings[i].userId, ratings[i].movieId };
+                svmOutput[i] = (int)ratings[i].rating * 2;
                 output[i] = outputVector;
-                //svmInput[i] = new double[] { ratings[i].userId, ratings[i].movieId };
-                //svmOutput[i] = ratings[i].rating;
+                //Debug.WriteLine("INPUT LENGTH: " + input[i].Length);
                 //PrintVector(input[i], "INPUT");
                 //PrintVector(output[i], "OUTPUT");
                 //PrintVector(svmInput[i], "SVM INPUT");
                 //Debug.WriteLine(svmOutput[i]);
             }
-            NeuralData neuralData = new NeuralData(input, output);
+            NeuralData svmData = new NeuralData(svmInput, svmOutput);
+            NeuralData neuralData = new NeuralData(svmInput, output);
             Debug.WriteLine("FINISHED CREATING VECTORS");
             //NeuralData regressionData = new NeuralData(svmInput, output);
             return new List<NeuralData>() { neuralData };
