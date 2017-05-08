@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 public class NeuralData
 {
     public double[][] input { get; set; }
-    public double[][] output { get; set; }
-    public int[] intOutput { get; set; }
-    public string[] topics { get; set; }
+    public virtual double[][] output { get; set; }
+    public virtual string[] topics { get; set; }
 
     public NeuralData(double[][] input, double[][] output, string[] topics)
     {
@@ -24,10 +23,9 @@ public class NeuralData
         this.output = output;
     }
 
-    public NeuralData(double[][] input, int[] output)
+    public NeuralData()
     {
-        this.input = input;
-        this.intOutput = output;
+
     }
 
     public int[] RandomIndices(double[][] inputArray)
@@ -42,7 +40,7 @@ public class NeuralData
         return indicies.OrderBy(x => random.Next()).ToArray();
     }
 
-    public NeuralData Shuffle()
+    public virtual NeuralData Shuffle()
     {
         int[] neuralIndices = RandomIndices(input);
         double[][] neuralInput = new double[neuralIndices.Length][];

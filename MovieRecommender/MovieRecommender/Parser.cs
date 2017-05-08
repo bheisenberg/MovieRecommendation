@@ -11,12 +11,12 @@ namespace MovieRecommender
     public class Parser
     {
         public string ratingsFile = @"Resources\ratings.csv";
-        public Dictionary<int, List<MovieRating>> userData;
+        public string moviesFile = @"Resources\movies.csv";
+        public Dictionary<int, double[]> genreDict;
         public List<int> movieIds;
         public List<int> userIds;
         public Parser ()
         {
-            userData = new Dictionary<int, List<MovieRating>>();
             movieIds = new List<int>();
             userIds = new List<int>();
             GetNeuralData();
@@ -28,8 +28,24 @@ namespace MovieRecommender
                 .Select(csvLine => csvLine.Split(',')).Skip(1)
                 .Select(s => new MovieRating(int.Parse(s[0]), int.Parse(s[1]), double.Parse(s[2]), int.Parse(s[3]))).ToList();
             GetUserData(ratings);
+            genreDict = CreateGenreDict();
+            //Dictionary<int, int> genreDict = CreateGenreDict();
             return CreateVectors(ratings);
         }
+
+        public Dictionary<int, double[]> CreateGenreDict()
+        {
+           // Dictionary<int, double[]> genreDict = new Dictionary<int, double[]>();
+            List<string> genres = File.ReadLines(moviesFile)
+            .Select(csvLine => csvLine.Split(',')).Skip(1)
+            .Select(s => s[2].Split('|')).SelectMany(a => a).Distinct().ToList();
+
+            return File.ReadLines(moviesFile)
+                .Select(csvLine => csvLine.Split(',')).Skip(1)
+                .ToDictionary(s => int.Parse(s[0]), s => CreateVector(genres, s[2].Split('|').ToList()));
+        }
+
+
 
         private void GetUserData (List<MovieRating> ratings)
         {
@@ -42,9 +58,9 @@ namespace MovieRecommender
 
         private List<NeuralData> CreateVectors(List<MovieRating> ratings)
         {
-            //double[][] input = new double[ratings.Count][];
+            double[][] input = new double[ratings.Count][];
             double[][] output = new double[ratings.Count][];
-            double[][] svmInput = new double[ratings.Count][];
+            //double[][] svmInput = new double[ratings.Count][];
             int[] svmOutput = new int[ratings.Count];
             for (int i = 0; i < ratings.Count; i++)
             {
@@ -53,20 +69,26 @@ namespace MovieRecommender
                 double[] outputVector = new double[] { ratings[i].rating };
                 //input[i] = userVector.Concat(movieVector).ToArray();
                 //output[i] = outputVector;
-                svmInput[i] = new double[] { ratings[i].userId, ratings[i].movieId };
+                double[] userMovie = new double[] { ratings[i].userId, ratings[i].movieId };
+                input[i] = userMovie.Concat(genreDict[ratings[i].movieId]).ToArray();
                 svmOutput[i] = (int)ratings[i].rating * 2;
                 output[i] = outputVector;
+
+
                 //Debug.WriteLine("INPUT LENGTH: " + input[i].Length);
                 //PrintVector(input[i], "INPUT");
                 //PrintVector(output[i], "OUTPUT");
                 //PrintVector(svmInput[i], "SVM INPUT");
                 //Debug.WriteLine(svmOutput[i]);
             }
-            NeuralData svmData = new NeuralData(svmInput, svmOutput);
-            NeuralData neuralData = new NeuralData(svmInput, output);
-            Debug.WriteLine("FINISHED CREATING VECTORS");
+            //NeuralData svmData = new NeuralData(svmInput, svmOutput);
+            NeuralData neuralData = new NeuralData(input, output);
+            SVMData svmData = new SVMData(input, svmOutput);
+            //Debug.WriteLine("FINISHED CREATING VECTORS");
+            //Debug.WriteLine("INPUT HEIGHT: " + input.GetLength(0));
+            //Debug.WriteLine("INPUT WIDTH: " + input[0].Length);
             //NeuralData regressionData = new NeuralData(svmInput, output);
-            return new List<NeuralData>() { neuralData };
+            return new List<NeuralData>() { neuralData, svmData };
         }
 
 
@@ -77,6 +99,23 @@ namespace MovieRecommender
             for (int i = 0; i < classifier.Count; i++)
             {
                 if (data == classifier[i])
+                {
+                    vector[i] = 1;
+                }
+                else
+                {
+                    vector[i] = 0;
+                }
+            }
+            return vector;
+        }
+
+        private double[] CreateVector(List<string> classifier, List<string> data)
+        {
+            double[] vector = new double[classifier.Count];
+            for (int i = 0; i < classifier.Count; i++)
+            {
+                if (data.Contains(classifier[i]))
                 {
                     vector[i] = 1;
                 }

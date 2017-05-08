@@ -60,9 +60,6 @@
       <HintPath>..\packages\Accord.Statistics.3.4.0\lib\net46\Accord.Statistics.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NeuralTextCategorization">
-      <HintPath>..\..\..\NeuralTextCategorization\NeuralTextCategorization\NeuralTextCategorization\bin\Debug\NeuralTextCategorization.exe</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -80,6 +77,8 @@
     <Compile Include="Parser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SVMData.cs" />
+    <Compile Include="SVMFold.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

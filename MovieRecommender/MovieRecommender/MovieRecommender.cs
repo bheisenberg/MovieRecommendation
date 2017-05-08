@@ -17,8 +17,8 @@ namespace MovieRecommender
 {
     class MovieRecommender
     {
-        private int folds = 1;
-        private float targetError = 0.001f;
+        private int folds = 10;
+        private float targetError = 0.003f;
         private List<NeuralData> data;
         public MovieRecommender(List<NeuralData> data)
         {
@@ -32,7 +32,14 @@ namespace MovieRecommender
             this.data = new List<NeuralData>();
             foreach(NeuralData item in data)
             {
-                this.data.Add(item);
+                if (item is SVMData)
+                {
+                    SVMData currItem = (SVMData)item;
+                    this.data.Add(currItem.Shuffle());
+                } else
+                {
+                    this.data.Add(item.Shuffle());
+                }
             }
         }
 
@@ -67,22 +74,24 @@ namespace MovieRecommender
                 new NguyenWidrow(network).Randomize();
                 double error = int.MaxValue;
                 double previousError = error;
+                double delta;
                 Debug.WriteLine("INITIAL ERROR: " + error);
                 do
                 {
                     previousError = error;
                     error = teacher.RunEpoch(currentFold.trainX, currentFold.trainY);
-                    Debug.WriteLine("ERROR: " + error + " CHANGE: " + (Math.Abs(previousError - error) / previousError));
+                    delta = (Math.Abs(previousError - error) / previousError);
+                    Debug.WriteLine("ERROR: " + error + " CHANGE: " + delta);
                 }
-                while (error > 0 && (Math.Abs(previousError - error)) / previousError > targetError);
+                while (error > 0 && delta > targetError);
                 double[][] predictedY = ComputeOutput(network, currentFold.testX);
-                /*for(int j=0; j < predictedY.GetLength(0); j++)
+                for(int j=0; j < predictedY.GetLength(0); j++)
                 {
-                    for(int k=0; k < predictedY[j].Length; j++)
+                    for(int k=0; k < predictedY[j].Length; k++)
                     {
                         Debug.WriteLine(predictedY[j][k]);
                     }
-                }*/
+                }
             }
         }
 
@@ -96,16 +105,17 @@ namespace MovieRecommender
             return tempOutput;
         }
 
-        /*private void SVM ()
+        private void SVM ()
         {
-            int n = data[0].input.GetLength(0);
+            SVMData currData = (SVMData)data[1];
+            int n = currData.input.GetLength(0);
             int size = n / folds;
             for (int i = 0; i < folds; i++)
             {
                 Debug.WriteLine("STARTING FOLD " + i);
                 int start = i * size;
                 int end = (i + 1) * size - 1;
-                FoldData currentFold = new FoldData(data[0].input, data[0].intOutput, start, end);
+                SVMFold currentFold = new SVMFold(currData.input, currData.output, start, end);
                 var teacher = new MulticlassSupportVectorLearning<Gaussian>()
                 {
                     // Configure the learning algorithm to use SMO to train the
@@ -119,7 +129,7 @@ namespace MovieRecommender
                 };
 
                 // Learn a machine
-                var machine = teacher.Learn(data[0].input, data[0].intOutput);
+                var machine = teacher.Learn(currData.input, currData.output);
 
 
                 // Create the multi-class learning algorithm for the machine
@@ -140,10 +150,10 @@ namespace MovieRecommender
                 calibration.ParallelOptions.MaxDegreeOfParallelism = 1;
 
                 // Learn a machine
-                calibration.Learn(data[0].input, data[0].intOutput);
+                calibration.Learn(currData.input, currData.output);
 
                 // Obtain class predictions for each sample
-                int[] predicted = machine.Decide(data[0].input);
+                int[] predicted = machine.Decide(currData.input);
 
                 for(int j=0; j < predicted.Length; j++)
                 {
@@ -153,7 +163,7 @@ namespace MovieRecommender
                 // Get class scores for each sample
                 //double[] scores = machine.Score(inputs);
             }
-        }*/
+        }
 
         private void LeastSquares()
         {
