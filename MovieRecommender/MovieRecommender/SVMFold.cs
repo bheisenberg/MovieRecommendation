@@ -8,9 +8,9 @@ namespace MovieRecommender
 {
     public class SVMFold : FoldData
     {
-        private new int[] testY;
-        private new int[] trainY;
-        public SVMFold (double[][] input, int[] output, int start, int end)
+        public new int[] testY;
+        public new int[] trainY;
+        public SVMFold(double[][] input, int[] output, int start, int end)
         {
             this.trainX = new double[input.GetLength(0) - (end - start)][];
             this.trainY = new int[output.GetLength(0) - (end - start)];
