@@ -10,7 +10,7 @@ namespace MovieRecommender
 {
     public class Parser
     {
-        public string ratingsFile = @"Resources\ratings.csv";
+        public string ratingsFile = @"Resources\test.csv";
         public string moviesFile = @"Resources\movies.csv";
         public Dictionary<int, double[]> genreDict;
         public List<int> movieIds;
@@ -26,6 +26,10 @@ namespace MovieRecommender
             List<MovieRating> ratings = File.ReadLines(ratingsFile)
                 .Select(csvLine => csvLine.Split(',')).Skip(1)
                 .Select(s => new MovieRating(int.Parse(s[0]), int.Parse(s[1]), double.Parse(s[2]), int.Parse(s[3]))).ToList();
+
+            /*List<MovieRating> ratings = File.ReadLines(ratingsFile)
+                .Select(csvLine => csvLine.Split(',')).Skip(1)
+                .Select(s => new MovieRating(int.Parse(s[0]), int.Parse(s[1]), 0, 0)).ToList();*/
             GetUserData(ratings);
             genreDict = CreateGenreDict();
             //Dictionary<int, int> genreDict = CreateGenreDict();
@@ -79,7 +83,7 @@ namespace MovieRecommender
                 input[i] = userVector.Concat(movieVector).Concat(genreDict[ratings[i].movieId]).ToArray();
                 svmOutput[i] = (int)ratings[i].rating;
                 output[i] = outputVector;
-
+                PrintVector(input[i], "INPUT");
 
                 //Debug.WriteLine("INPUT LENGTH: " + input[i].Length);
                 //PrintVector(input[i], "INPUT");
@@ -89,7 +93,7 @@ namespace MovieRecommender
             }
             //NeuralData svmData = new NeuralData(svmInput, svmOutput);
             NeuralData neuralData = new NeuralData(input, output);
-            SVMData svmData = new SVMData(svmInput, svmOutput);
+            SVMData svmData = new SVMData(input, svmOutput);
             //Debug.WriteLine("FINISHED CREATING VECTORS");
             //Debug.WriteLine("INPUT HEIGHT: " + input.GetLength(0));
             //Debug.WriteLine("INPUT WIDTH: " + input[0].Length);

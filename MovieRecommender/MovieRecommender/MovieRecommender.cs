@@ -21,7 +21,7 @@ namespace MovieRecommender
     {
         public enum Model { activation, deepBelief, svm, leastSquares };
         private Model currModel = Model.activation;
-        private bool train = true;
+        private bool train = false;
         private int folds = 10;
         private float targetError = 0.001f;
         private ReccomenderData data;
@@ -202,10 +202,29 @@ namespace MovieRecommender
                     TSS += tssIncrementer;
                 }
             }
-            Debug.WriteLine("RSS ITERATIVE: " + RSS);
-            Debug.WriteLine("TSS ITERATIVE: " + TSS);
+            //Debug.WriteLine("RSS ITERATIVE: " + RSS);
+            //Debug.WriteLine("TSS ITERATIVE: " + TSS);
             return 1 - (RSS / TSS);
         }
+
+        public double calculateRSquared(int[] predictedY, int[] actualY)
+        {
+            double RSS = 0;
+            double TSS = 0;
+            double yBar = predictedY.Sum() / predictedY.GetLength(0);
+            for (int j = 0; j < predictedY.GetLength(0); j++)
+            {
+                double predicted = predictedY[j];
+                double actual = actualY[j];
+                Debug.WriteLine("Predicted: " + predicted + " Actual: " + actual);
+                double rssIncrementer = Math.Pow(predicted - actual, 2);
+                double tssIncrementer = Math.Pow(actual - yBar, 2);
+                RSS += rssIncrementer;
+                TSS += tssIncrementer;
+            }
+            return 1 - (RSS / TSS);
+        }
+
 
         public double[][] ComputeOutput(ActivationNetwork network, double[][] testX)
         {
@@ -219,6 +238,7 @@ namespace MovieRecommender
 
         private void SVM()
         {
+            double totalRSquared = 0;
             SVMData currData = data.svmData.Shuffle();
             int n = currData.input.GetLength(0);
             int size = n / folds;
@@ -230,9 +250,6 @@ namespace MovieRecommender
                 int start = i * size;
                 int end = (i + 1) * size - 1;
                 SVMFold currentFold = new SVMFold(currData.input, currData.output, start, end);
-
-                currentFold.trainX = currentFold.trainX.Take(1000).ToArray();
-                currentFold.trainY = currentFold.trainY.Take(1000).ToArray();
                 Debug.WriteLine("INPUT VECTOR SIZE: " + currentFold.trainX[0].Length);
                 Debug.WriteLine("INPUT SIZE: " + currentFold.trainX.GetLength(0));
                 Debug.WriteLine("OUTPUT SIZE: " + currentFold.trainY.Length);
@@ -272,13 +289,11 @@ namespace MovieRecommender
 
                 // Obtain class predictions for each sample
                 int[] predicted = machine.Decide(currentFold.testX);
-
-                for (int j = 0; j < predicted.Length; j++)
-                {
-                    Debug.WriteLine(predicted[j] + " " + currentFold.testY[j]);
-                }
+                double rSquared = calculateRSquared(currentFold.testY, predicted);
+                totalRSquared += rSquared;
+                Debug.WriteLine("R SQUARED: " +rSquared);
             }
-
+            Debug.WriteLine("TOTAL R SQUARED: " +totalRSquared / folds);
         }
     }
 
