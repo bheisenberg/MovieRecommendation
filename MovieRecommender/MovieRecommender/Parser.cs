@@ -10,7 +10,7 @@ namespace MovieRecommender
 {
     public class Parser
     {
-        public string ratingsFile = @"Resources\smallratings.csv";
+        public string ratingsFile = @"Resources\ratings.csv";
         public string moviesFile = @"Resources\movies.csv";
         public Dictionary<int, double[]> genreDict;
         public List<int> movieIds;
@@ -42,8 +42,8 @@ namespace MovieRecommender
             return File.ReadLines(moviesFile)
                 .Select(csvLine => csvLine.Split(',')).Skip(1)
                 .ToDictionary(s => int.Parse(s[0]), s => CreateVector(genres, s[2].Split('|').ToList()));
-        }
 
+        }
 
 
         private void GetUserData (List<MovieRating> ratings)
@@ -60,6 +60,7 @@ namespace MovieRecommender
             Debug.WriteLine("CREATING VECTORS");
             double[][] input = new double[ratings.Count][];
             double[][] output = new double[ratings.Count][];
+            double[][] svmInput = new double[ratings.Count][];
             double movieMax = movieIds.Max();
             double userMax = userIds.Max();
             //Debug.WriteLine(movieMax);
@@ -70,12 +71,13 @@ namespace MovieRecommender
             {
                 double[] userVector = CreateVector(userIds, ratings[i].userId);
                 //double[] movieVector = CreateVector(movieIds, ratings[i].movieId);
-                double[] outputVector = new double[] { (ratings[i].rating-1) / 4 };
+                double[] outputVector = new double[] { ratings[i].rating / 5 };
+                svmInput[i] = new double[] { ratings[i].userId, ratings[i].movieId, }.Concat(genreDict[ratings[i].movieId]).ToArray();
                 //input[i] = userVector.Concat(movieVector).ToArray();
                 //output[i] = outputVector;
                 double[] movieVector = new double[] { ratings[i].movieId / movieMax };
                 input[i] = userVector.Concat(movieVector).Concat(genreDict[ratings[i].movieId]).ToArray();
-                svmOutput[i] = (int)ratings[i].rating * 2;
+                svmOutput[i] = (int)ratings[i].rating;
                 output[i] = outputVector;
 
 
@@ -87,7 +89,7 @@ namespace MovieRecommender
             }
             //NeuralData svmData = new NeuralData(svmInput, svmOutput);
             NeuralData neuralData = new NeuralData(input, output);
-            SVMData svmData = new SVMData(input, svmOutput);
+            SVMData svmData = new SVMData(svmInput, svmOutput);
             //Debug.WriteLine("FINISHED CREATING VECTORS");
             //Debug.WriteLine("INPUT HEIGHT: " + input.GetLength(0));
             //Debug.WriteLine("INPUT WIDTH: " + input[0].Length);
