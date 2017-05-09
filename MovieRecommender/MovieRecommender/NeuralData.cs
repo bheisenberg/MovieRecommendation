@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MovieRecommender;
 
 public class NeuralData
 {
     public double[][] input { get; set; }
     public virtual double[][] output { get; set; }
-    public virtual string[] topics { get; set; }
+    public virtual List<MovieRating> movieRatings { get; set; }
 
-    public NeuralData(double[][] input, double[][] output, string[] topics)
+    public NeuralData(double[][] input, double[][] output, List<MovieRating> movieRatings)
     {
         this.input = input;
         this.output = output;
-        this.topics = topics;
+        this.movieRatings = movieRatings;
     }
 
     public NeuralData(double[][] input, double[][] output)

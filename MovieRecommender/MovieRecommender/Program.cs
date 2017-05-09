@@ -8,6 +8,7 @@ namespace MovieRecommender
 {
     class Program
     {
+        public static int verbose;
         static void Main(string[] args)
         {
             Parser parser = new Parser();

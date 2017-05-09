@@ -19,14 +19,18 @@ namespace MovieRecommender
 {
     class MovieRecommender
     {
-        public enum Model { activation, deepBelief, svm, leastSquares };
-        private Model currModel = Model.activation;
-        private bool train = false;
-        private int folds = 10;
-        private float targetError = 0.001f;
         private ReccomenderData data;
-        public string deepBeliefFile = @"Resources\deepbelief.txt";
-        public string activationFile = @"Resources\activation.txt";
+        public enum Model { activation, deepBelief, svm, regression };
+        private Model currModel = Model.activation;
+        private bool train = false; //True: Trains on ratings
+
+        private int folds = 10; //Number of folds for K-Folding
+        private float targetError = 0.001f; //Target error for the Activation and DeepBelief network to reach
+
+        public string resultFile = @"Resources\resultFile.csv";//Activation network save path
+        public string deepBeliefFile = @"Resources\deepbelief.txt";//Deep belief network save path
+        public string activationFile = @"Resources\activation.txt";//Activation network save path
+
         public MovieRecommender(ReccomenderData data)
         {
             this.data = data;
@@ -45,7 +49,10 @@ namespace MovieRecommender
                     if (train) RunActivationNetwork(); else LoadActivationNetwork();
                     break;
                 case Model.svm:
-                    SVM();
+                    RunSupportVectorMachine();
+                    break;
+                case Model.regression:
+                    RunLinearRegression();
                     break;
             }
         }
@@ -57,9 +64,6 @@ namespace MovieRecommender
             var network = DeepBeliefNetwork.Load(deepBeliefFile);
             var teacher = new BackPropagationLearning(network);
             double[][] predictedY = ComputeOutput(network, currData.input);
-            double yBar = predictedY.Select(s => s.Sum()).Sum() / predictedY.GetLength(0);
-            double rSquared = calculateRSquared(predictedY, currData.output);
-            Debug.WriteLine("R SQUARED: " + rSquared);
         }
 
         private void PrintVector(double[] input, string name)
@@ -130,9 +134,22 @@ namespace MovieRecommender
             ActivationNetwork network = ActivationNetwork.Load(activationFile) as ActivationNetwork;
             var teacher = new BackPropagationLearning(network);
             double[][] predictedY = ComputeOutput(network, currData.input);
-            double yBar = predictedY.Select(s => s.Sum()).Sum() / predictedY.GetLength(0);
-            double rSquared = calculateRSquared(predictedY, currData.output);
-            Debug.WriteLine("R SQUARED: " + rSquared);
+            PrintTestOutput(predictedY, currData.movieRatings);
+        }
+
+        private void PrintTestOutput(double[][] predictedY, List<MovieRating> ratings)
+        {
+            double[] output = predictedY.SelectMany(r => r).ToArray(); //Converts the 2D array of output to a 1D array
+            File.Delete(resultFile);
+            using (StreamWriter rw = new StreamWriter(resultFile, true))
+            {
+                for (int i = 0; i < output.Length; i++)
+                {
+                    string result = string.Format("{0},{1},{2}", ratings[i].userId, ratings[i].movieId, Math.Round(output[i] * 5, 1));
+                    Debug.WriteLine(result);
+                    rw.WriteLine(result);
+                }
+            }
         }
 
         private void RunActivationNetwork()
@@ -202,8 +219,6 @@ namespace MovieRecommender
                     TSS += tssIncrementer;
                 }
             }
-            //Debug.WriteLine("RSS ITERATIVE: " + RSS);
-            //Debug.WriteLine("TSS ITERATIVE: " + TSS);
             return 1 - (RSS / TSS);
         }
 
@@ -236,7 +251,7 @@ namespace MovieRecommender
             return tempOutput;
         }
 
-        private void SVM()
+        private void RunSupportVectorMachine()
         {
             double totalRSquared = 0;
             SVMData currData = data.svmData.Shuffle();
@@ -295,35 +310,30 @@ namespace MovieRecommender
             }
             Debug.WriteLine("TOTAL R SQUARED: " +totalRSquared / folds);
         }
+
+        private void RunLinearRegression()
+        {
+            double totalRSquared = 0;
+            NeuralData currData = data.neuralData;
+            int n = currData.input.GetLength(0);
+            int size = n / folds;
+            for (int i = 0; i < folds; i++)
+            {
+                Debug.WriteLine("STARTING FOLD " + i);
+                int start = i * size;
+                int end = (i + 1) * size - 1;
+                FoldData currentFold = new FoldData(currData.input, currData.output, start, end);
+                // Use Ordinary Least Squares to learn the regression
+                OrdinaryLeastSquares ols = new OrdinaryLeastSquares();
+                // Use OLS to learn the simple linear regression
+                var regression = ols.Learn(currentFold.trainX, currentFold.trainY);
+
+                // Compute the output for a given input:
+                double[][] testOutput = regression.Transform(currentFold.testX); // The answer will be 28.088
+                double rSquared = calculateRSquared(testOutput, currentFold.testY);
+                totalRSquared += rSquared;
+                Debug.WriteLine(rSquared);
+            }
+        }
     }
-
-
-
-    /*private void LeastSquares()
-     {
-         int n = data[1].input.GetLength(0);
-         int size = n / folds;
-         for (int i = 0; i < folds; i++)
-         {
-             Debug.WriteLine("STARTING FOLD " + i);
-             int start = i * size;
-             int end = (i + 1) * size - 1;
-             FoldData currentFold = new FoldData(data[1].input, data[1].output, start, end);
-             // Use Ordinary Least Squares to learn the regression
-             OrdinaryLeastSquares ols = new OrdinaryLeastSquares();
-             // Use OLS to learn the simple linear regression
-             var regression = ols.Learn(currentFold.trainX, currentFold.trainY);
-
-             // Compute the output for a given input:
-             double [][] testOutput = regression.Transform(currentFold.testX); // The answer will be 28.088
-
-             for(int j=0; j < testOutput.GetLength(0); j++)
-             {
-                 for(int k=0; k < testOutput[j].Length; i++)
-                 {
-                     Debug.WriteLine(testOutput[k]);
-                 }
-             }
-         }
-     }*/
 }
