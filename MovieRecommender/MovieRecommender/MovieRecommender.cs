@@ -21,11 +21,12 @@ namespace MovieRecommender
     {
         public enum Model { activation, deepBelief, svm, leastSquares };
         private Model currModel = Model.activation;
+        private bool train = true;
         private int folds = 10;
-        private bool train = false;
         private float targetError = 0.001f;
         private ReccomenderData data;
-        public string networkFile = @"Resources\network.txt";
+        public string deepBeliefFile = @"Resources\deepbelief.txt";
+        public string activationFile = @"Resources\activation.txt";
         public MovieRecommender(ReccomenderData data)
         {
             this.data = data;
@@ -41,7 +42,7 @@ namespace MovieRecommender
                     if (train) RunDeepBeliefNetwork(); else LoadDeepBeliefNetwork();
                     break;
                 case Model.activation:
-                    RunActivationNetwork();
+                    if (train) RunActivationNetwork(); else LoadActivationNetwork();
                     break;
                 case Model.svm:
                     SVM();
@@ -53,7 +54,7 @@ namespace MovieRecommender
         {
             Debug.WriteLine("LOADING NETWORK FROM FILE");
             var currData = data.neuralData;
-            var network = DeepBeliefNetwork.Load(networkFile);
+            var network = DeepBeliefNetwork.Load(deepBeliefFile);
             var teacher = new BackPropagationLearning(network);
             double[][] predictedY = ComputeOutput(network, currData.input);
             double yBar = predictedY.Select(s => s.Sum()).Sum() / predictedY.GetLength(0);
@@ -77,14 +78,14 @@ namespace MovieRecommender
             var currData = data.neuralData.Shuffle();
             double totalRSquared = 0;
             Debug.WriteLine("STARTING NEURAL NETWORK");
-            int n = currData.input.Take(1000).ToArray().GetLength(0);
+            int n = currData.input.GetLength(0);
             int size = n / folds;
             for (int i = 0; i < folds; i++)
             {
                 Debug.WriteLine("CURRENT FOLD: " + i);
                 int start = i * size;
                 int end = (i + 1) * size - 1;
-                FoldData currentFold = new FoldData(currData.input.Take(1000).ToArray(), currData.output.Take(1000).ToArray(), start, end);
+                FoldData currentFold = new FoldData(currData.input, currData.output, start, end);
                 int hiddenLayers = (currentFold.trainX[0].Length + currentFold.trainY[0].Length) / 2;
                 Debug.WriteLine(hiddenLayers);
                 IActivationFunction function = new BipolarSigmoidFunction();
@@ -113,13 +114,25 @@ namespace MovieRecommender
                 if (i == 0)
                 {
                     Debug.WriteLine("SAVED");
-                    File.Delete(networkFile);
-                    File.Create(networkFile).Close();
-                    network.Save(networkFile);
+                    File.Delete(deepBeliefFile);
+                    File.Create(deepBeliefFile).Close();
+                    network.Save(deepBeliefFile);
+                    Console.ReadKey();
                 }
             }
-
             Debug.WriteLine("AVERAGE R SQUARED: " + totalRSquared / folds);
+        }
+
+        private void LoadActivationNetwork ()
+        {
+            Debug.WriteLine("LOADING NETWORK FROM FILE");
+            var currData = data.neuralData;
+            ActivationNetwork network = ActivationNetwork.Load(activationFile) as ActivationNetwork;
+            var teacher = new BackPropagationLearning(network);
+            double[][] predictedY = ComputeOutput(network, currData.input);
+            double yBar = predictedY.Select(s => s.Sum()).Sum() / predictedY.GetLength(0);
+            double rSquared = calculateRSquared(predictedY, currData.output);
+            Debug.WriteLine("R SQUARED: " + rSquared);
         }
 
         private void RunActivationNetwork()
@@ -127,14 +140,14 @@ namespace MovieRecommender
             Debug.WriteLine("STARTING ACTIVATION NETWORK");
             var currData = data.neuralData.Shuffle();
             double totalRSquared = 0;
-            int n = currData.input.Take(1000).ToArray().GetLength(0);
+            int n = currData.input.GetLength(0);
             int size = n / folds;
             for (int i = 0; i < folds; i++)
             {
                 Debug.WriteLine("CURRENT FOLD: " + i);
                 int start = i * size;
                 int end = (i + 1) * size - 1;
-                FoldData currentFold = new FoldData(currData.input.Take(1000).ToArray(), currData.output.Take(1000).ToArray(), start, end);
+                FoldData currentFold = new FoldData(currData.input, currData.output, start, end);
                 int hiddenLayers = (currentFold.trainX[0].Length + currentFold.trainY[0].Length) / 2;
                 Debug.WriteLine(hiddenLayers);
                 IActivationFunction function = new BipolarSigmoidFunction();
@@ -160,6 +173,13 @@ namespace MovieRecommender
                 double rSquared = calculateRSquared(predictedY, currentFold.testY);
                 totalRSquared += rSquared;
                 Debug.WriteLine("R SQUARED: " + rSquared);
+                if (i == 0)
+                {
+                    Debug.WriteLine("SAVED");
+                    File.Delete(activationFile);
+                    File.Create(activationFile).Close();
+                    network.Save(activationFile);
+                }
             }
             Debug.WriteLine("AVERAGE R SQUARED: " + totalRSquared / folds);
         }
